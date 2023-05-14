@@ -1,0 +1,233 @@
+---
+title: "Soal 5 - Tugas Responsi 10"
+author: "Angga Fathan Rofiqy"
+date: "`r Sys.Date()`"
+output:
+  word_document: default
+  html_document: default
+---
+
+### Working Directory
+
+```{r}
+repo  <- gsub  ( "\\\\",  "/",  readClipboard ()  ); repo
+```
+
+```{r setup, include=FALSE, echo=FALSE}
+require("knitr")
+opts_knit$set(root.dir = "C:/Users/Fathan/Documents/[Kuliah]/[semester 4]/02 Rancob/Tugas/Responsi 10")
+```
+
+### Data Entry
+
+```{r}
+library(readxl)
+data <- read_excel("Data.xlsx")
+View(data)
+str(data)
+```
+
+### 1. Tentukan rancangan yang digunakan
+
+Rancangan acak yang ditentukan dalam percobaan ini adalah Rancangan Acak Kelompok Lengkap (RAKL). Terdapat Faktor tunggal dalam percobaan ini, yaitu Konsentrasi Larutan (oBrix). Dengan Durasi OD (jam) sebagai kelompok atau blok yang mengamati kadar vitamin C yang tersisa (mg/100gram).
+
+### 2. Model Aditif
+
+$$
+Y_{ij}=\mu+\tau_i+\beta_j+\epsilon_{ij}
+$$
+
+Dengan :
+
+-   $i$=1,2,3
+
+-   $j$=1,2,3,..,10
+
+-   $Y_{ij}=$ Nilai pengamatan kadar vitamin C yang tersisa dari unit percobaan konsentrasi larutan ke-$i$ dalam kelompok ke-$j$
+
+-   $\mu=$ Rata-rata umum sisa kadar vitamin C untuk seluruh unit percobaan
+
+-   $\tau_i=$ Pengaruh perlakuan konsentrasi larutan terhadap sisaan kadar vitamin C pada taraf ke-$i$
+
+-   $\beta_i=$ Pengaruh kelompok dusari OD pada taraf ke-$j$ terhadap sisaan kadar vitamin C
+
+-   $\epsilon_{ij}=$ Pengaruh (galat) acak pada perlakuan konsentrasi larutan ke-$i$ pada kelompok durasi OD ke-$j$
+
+### 3. Hipotesis
+
+-   **Pengaruh Perlakuan :**
+
+$H_0 : \tau_1 = … = \tau_3 = 0$ (Konsentrasi larutan tidak berpengaruh terhadap kadar vitamin C tersisa)
+
+$H_1 :$ paling sedikit ada satu $i$ dengan $\tau_i\neq0$
+
+-   **Pengaruh Pengelompokkan :**
+
+$H_0 : \beta_1 = … \beta_{10} = 0$ (Kelompok durasi waktu tidak berpengaruh terhadap sisa kadar vitamin C)
+
+$H_1 :$ paling sedikit ada satu $j$ dengan $\beta_j\neq0$
+
+### 4. ANOVA
+
+#### a. Perhitungan Manual
+
+```{r}
+#Derajat Bebas Perlakuan :
+#Banyaknya perlakuan
+t <- ncol(data[,-1])
+dbp <- t-1
+cat("Db perlakuan =",dbp)
+```
+
+```{r}
+#Derajat Bebas kelompok :
+#Banyaknya kelompok
+r <- nrow(data[,1])
+dbk <- r-1
+cat("Db kelompok =",dbk)
+```
+
+```{r}
+#Derajat Bebas galat :
+dbg <- (t-1) * (r-1)
+cat("Db galat =",dbg)
+```
+
+```{r}
+#Db total :
+dbt <- t*r-1
+cat("Db total =",dbt)
+```
+
+```{r}
+#Faktor Koreksi :
+fk <- sum(data[,-1])^2/(t*r)
+cat("FK =",fk)
+```
+
+```{r}
+#Jumlah Kuadrat Perlakuan :
+jkp <- 0
+for(i in 2:(t+1)){
+  jkp <- jkp + (sum(data[,i])^2 / r)
+}
+jkp <- jkp-fk
+cat("JKP =", jkp)
+```
+
+```{r}
+#Jumlah Kuadrat Kelompok :
+jkk <- 0
+for(i in 1:r){
+  jkk <- jkk + (sum(data[i,-1])^2 / t)
+}
+jkk <- jkk-fk
+cat("JKK =", jkk)
+```
+
+```{r}
+#Jumlah Kuadrat Total :
+jkt <- sum(data[,-1]^2) -fk
+cat("JKT =", jkt)
+```
+
+```{r}
+#Jumlah Kuadrat Galat :
+jkg <- jkt - (jkp+jkk)
+cat("JKG =", jkg)
+```
+
+```{r}
+#Kuadrat Tengah Perlakuan :
+ktp <- jkp/dbp
+cat("KTP =", ktp)
+```
+
+```{r}
+#Kuadrat Tengah Kelompok :
+ktk <- jkk/dbk
+cat("KTK =", ktk)
+```
+
+```{r}
+#Kuadrat Tengah Galat :
+ktg <- jkg/dbg
+cat("KTG =", ktg)
+```
+
+```{r}
+#F-hitung Perlakuan :
+fhit.p <- ktp/ktg
+cat("F-hitung Perlakuan =", fhit.p)
+```
+
+```{r}
+#F-hitung Kelompok :
+fhit.k <- ktk/ktg
+cat("F-hitung Kelompok =", fhit.k)
+```
+
+```{r}
+#F-tabel Perlakuan :
+alpha <- 0.05
+ftab.p <- qf(p=alpha, df1=dbp, df2=dbg, lower.tail=F)
+cat("F-tabel Perlakuan =", ftab.p)
+```
+
+```{r}
+#F-tabel Kelompok :
+alpha <- 0.05
+ftab.k <- qf(p=alpha, df1=dbk, df2=dbg, lower.tail=F)
+cat("F-tabel Kelompok =", ftab.k)
+```
+
+#### b. Tabel ANOVA
+
+```{r}
+anova <- data.frame(
+  c("Perlakuan", "Kelompok", "Galat", "Total"),
+  rbind(dbp,      dbk,        dbg,     dbt),
+  rbind(jkp,      jkk,        jkg,     jkt),
+  rbind(ktp,      ktk,        ktg,     NA),
+  rbind(fhit.p,   fhit.k,     NA,      NA),
+  rbind(ftab.p,   ftab.k,     NA,      NA)
+)
+colnames(anova) <- c("SK", "DB", "JK", "KT", "F-hitung", "F-tabel")
+rownames(anova) <- 1:4
+View(anova)
+anova
+```
+
+#### c. Uji F
+
+```{r}
+cat("  __________________\n",
+    "[PENGARUH PERLAKUAN]\n",
+    " ------------------\n ")
+if(fhit.p > ftab.p){
+  cat("F-hitung > F-tabel\n ",
+      round(fhit.p, 2),"  > ",
+      round(ftab.p, 2),
+      "\n -=(Maka Tolak H0)=-\n\n")
+} else   cat(" F-hitung < F-tabel\n  ",
+             round(fhit.p, 2),"  < ",
+             round(ftab.p, 2),
+             "\n-=(Maka Terima H0)=-\n\n")
+
+cat("  _________________\n",
+    "[PENGARUH KELOMPOK]\n",
+    " -----------------\n ")
+if(fhit.k > ftab.k){
+  cat("F-hitung > F-tabel\n ",
+      round(fhit.k, 2),"  > ",
+      round(ftab.k, 2),
+      "\n -=(Maka Tolak H0)=-")
+} else   cat(" F-hitung < F-tabel\n  ",
+             round(fhit.k, 2),"  < ",
+             round(ftab.k, 2),
+             "\n-=(Maka Terima H0)=-")
+```
+
+### 5. Kesimpulan
+
+Berdasarkan hasil uji ANOVA, didapat bahwa nilai F-hitung perlakuan lebih besar daripada F-tabel sehingga tolak $H_0$. Hal ini berarti perlakuan konsentrasi larutan memiliki pengaruh yang berbeda terhadap rata-rata respon (kadar vitamin C). Selanjutnya didapatkan bahwa F-hitung kelompok lebih besar daripada nilai F-tabel sehingga tolak $H_0$. Ini menandakan bahwa kelompok durasi OD mempunyai pengaruh yang berbeda pada rata-rata respon (kadar vitamin C).
